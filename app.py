@@ -7,14 +7,18 @@ import json
 p = Poliformat()
 app = Flask(__name__)
 
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
       dni = request.form['dni']
       clau = request.form['clau']
       token = binascii.hexlify(os.urandom(16))
-      p.login(dni, clau, token)
-      ans = {"token":token}
+      try:
+      	p.login(dni, clau, token)
+        ans = {"token":token}
+      except:
+        ans = {"error":"DNI or Clau incorrect"}
+      
       return json.dumps(ans)
 		
 @app.route('/sites/<token>/', methods=['GET'])
