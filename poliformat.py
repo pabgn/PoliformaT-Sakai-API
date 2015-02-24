@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import mechanize
 import cookielib
 from BeautifulSoup import BeautifulSoup
@@ -39,7 +41,7 @@ class Poliformat:
 
 
 	def get_sites(self):
-		b = BeautifulSoup(self.br.open('https://poliformat.upv.es/portal/tool/86ac4519-944d-49e5-a701-b03843f93614?panel=Main').read())
+		b = BeautifulSoup(self.br.open('https://poliformat.upv.es/portal/tool/86ac4519-944d-49e5-a701-b03843f93614?panel=Main').read(), convertEntities=BeautifulSoup.HTML_ENTITIES)
 		ops = b.find('select', {'name':'prefs_form:_id36'})
 		actives = ops.findChildren()
 		for c in actives:
@@ -61,18 +63,22 @@ class Poliformat:
 			self.get_panel(key, last)
 			self.get_options(key, 1)
 		self.sites[key]["options"]["Recursos"]='https://poliformat.upv.es/access/content/group/'+self.sites[key]["id"]+"/"
+		self.sites[key]["files"]={"navigation":{"current":self.sites[key]["options"]["Recursos"], "back":None}, "tree":[]}
 	def get_panel(self, key, item):
 		b = BeautifulSoup(self.br.open(self.sites[key]["options"][item]).read())	
 		i = b.find('iframe')
 		self.sites[key]["options"][item]=i["src"]
 	
 	def get_resources(self, key):
-		self.sites[key]["files"]=[]
-		b = BeautifulSoup(self.br.open(self.sites[key]["options"]["Recursos"]).read())	
+		print self.sites[key]["files"]["navigation"]["current"]
+		b = BeautifulSoup(self.br.open(self.sites[key]["files"]["navigation"]["current"]).read().decode('utf-8'), convertEntities=BeautifulSoup.HTML_ENTITIES)	
 		rows =  b.findAll("li",{"class":"folder"})
 		for r in rows:
-			self.sites[key]["files"].append({"name":r.find("a").contents[0], "link":r.find("a")['href']})
-
+			self.sites[key]["files"]["tree"].append({"type":"folder", "name":r.find("a").contents[0], "link":r.find("a")['href']})
+		rows =  b.findAll("li",{"class":"file"})
+		for r in rows:
+			self.sites[key]["files"]["tree"].append({"type":"file", "name":r.find("a").contents[0], "link":r.find("a")['href']})	
+		return self.sites[key]["files"]["tree"]
 	def print_resources(self, key):
 		
 		for f in self.sites[key]["files"]:
